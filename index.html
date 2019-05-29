@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatilbe" content="IE=edge">
+        <meta name="vierport" content="width=device-width, initial-scale=1">
+        <link
+                rel="stylesheet"
+                href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+                integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
+                crossorigin="anonymous"
+            />
+
+        <link href="https://afeld.github.io/emoji-css/emoji.css" rel="stylesheet">
+        <script
+                defer
+                src="https://use.fontawesome.com/releases/v5.7.2/js/all.js"
+                integrity="sha384-0pzryjIRos8mFBWMzSSZApWtPl/5++eIfzYmTgBBmXYdhvxPc+XcFEk+zJwDgWbP"
+                crossorigin="anonymous"
+            ></script>
+        <title>Personal Expense</title>
+        <style>
+            :root{
+                --dark-color: #111;
+                --light-color: #fff;
+            }
+
+            .dark{
+                color: var(--light-color);
+                background-color: var(--dark-color)
+            }
+
+            .moon-emoji{
+                margin: 10px;
+                cursor: pointer;
+                -webkit-transform: scaleX(-1);
+                transform: scaleX(-1);
+            }
+
+            .moon-emoji-reverse{
+                margin: 10px;
+                cursor: pointer;
+                -webkit-transform: scaleX(1);
+                transform: scaleX(1);
+            }
+        </style>
+    </head>
+    <body id="main-content">
+        <nav class="navbar navbar-dark bg-dark">
+            <span class="navbar-brand mb-0 h1">Xpers</span>
+            <span class="navbar-brand mb-0 h1" id="headingTotal"></span>
+        </nav>
+        <div class="container-fluid" style="min-height: 100vh">
+            <div class="container">
+                <div class="row">
+                    <div class="col-sm">
+                        <div class="d-flex align-items-center justify-content-end">
+                            Light/Dark 
+                            <i class="em em-first_quarter_moon moon-emoji" id="toggle"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="jumbotron mt-4" id="jumbotronDiv">
+                    <div class="input-group mb-3">
+                        <input
+                                id="inputAmt"
+                                type="text"
+                                class="form-control"
+                                placeholder="Amount spent"
+                                aria-label="Amount spent"
+                                aria-describedby="spent in rupee"
+                        />
+                        <div class="input-group-append">
+                            <span class="input-group-text" id="spent in rupee">₹</span>
+                        </div>
+                    </div>
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="spent at">@</span>
+                        </div>
+                        <input
+                                id="inputDesc"
+                                type="text"
+                                class="form-control"
+                                placeholder="spent on"
+                                aria-label="spent on"
+                                aria-describedby="spent at"
+                        />
+                        <div class="input-group-apped">
+                            <button class="btn btn-outline-primary" type="button" id="button-addon2">Add</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <ul class="list-group" id="expenseTable"></ul>
+                </div>
+            </div>
+        </div>
+    </body>
+    <script>
+        const inputAmt = document.querySelector("#inputAmt");
+        const inputDesc = document.querySelector("#inputDesc");
+        const btnAdd = document.querySelector("#button-addon2");
+        const expenseTable = document.querySelector("#expenseTable");
+        const total = document.querySelector("#headingTotal");
+        const btnToggle = document.querySelector('#toggle');
+        let theme = "light";
+        let btnClass = "btn btn-outline-danger btn-sm"
+        let savedTheme = "";
+        let totalExpense = 0;
+        renderTotal(totalExpense);
+
+        let allExpenses = [];
+
+        let savedArr = [];
+
+        // Logic
+        function addExpenses(){
+            const expenseItem = {};
+
+            const textAmount = inputAmt.value;
+            const textDesc = inputDesc.value;
+            const expense = parseInt(textAmount, 10);
+            totalExpense = totalExpense + expense;
+
+            renderTotal(totalExpense);
+            expenseItem.desc = textDesc;
+            expenseItem.amount = expense;
+            expenseItem.moment = new Date();
+
+            allExpenses.push(expenseItem);
+            storeData(expenseItem, totalExpense);
+
+            renderList(allExpenses);
+        }
+
+        // Controller functions
+
+        // storing the data
+        function storeData(expenseItem){
+            savedArr.push(expenseItem);
+            localStorage.setItem('saved', JSON.stringify(savedArr));
+            localStorage.setItem('total', totalExpense);
+        }
+
+        // on load function
+        window.onload = function(){
+            if(localStorage.getItem('saved') === null){
+                console.log('original state');
+                setTheme();
+                return;
+            }
+            let arr = JSON.parse(localStorage.getItem('saved'));
+            arr.map(a => {
+                let dt = new Date(a.moment);
+                a.moment = dt;
+                savedArr.push(a);
+            });
+
+            let totExp = parseInt(localStorage.getItem('total'));
+            allExpenses = savedArr;
+            setTheme();
+            renderList(allExpenses);
+            renderTotal(totExp);
+        }      
+        
+        btnAdd.addEventListener("click", addExpenses, false);
+
+        // get date string
+        function getDateString(moment){
+           return moment.toLocaleDateString('en-US', {
+               year: 'numeric', 
+               month: 'long', 
+               day: 'numeric'
+            });
+        };
+
+        // delete items
+        function deleteItem(dateValue){
+            savedArr = [];
+            allExpenses = allExpenses.filter((expense) => {
+            if(expense.moment.valueOf() !== dateValue){
+                storeData(expense);
+                return expense;
+            }
+            });
+            if(savedArr.length === 0){
+                localStorage.removeItem('saved');
+                localStorage.removeItem('total');
+            }
+            renderList(allExpenses);
+            newTotal(allExpenses);
+        }
+
+
+        // new total
+        function newTotal(expenses){
+            let sum = 0;
+            for(let i=0; i<expenses.length; i++){
+                sum = sum + expenses[i].amount;
+            }
+            totalExpense = sum;
+            localStorage.setItem('total', sum);
+            renderTotal(sum);
+
+        }
+
+        btnToggle.addEventListener('click', function(){
+            changeTheme();
+        });
+
+        function changeTheme(){
+            if(theme === "light"){
+                theme = "bg-dark";
+                btnClass = "btn btn-danger btn-sm";
+                localStorage.setItem('content-theme', theme);
+                btnToggle.classList.remove("moon-emoji");
+                btnToggle.classList.add("moon-emoji-reverse");
+                document.querySelector("#main-content").classList.add("dark");
+                document.querySelector("#jumbotronDiv").classList.add("bg-dark");
+                document.querySelector("#button-addon2").classList.add("btn-primary");
+                document.querySelector("#button-addon2").classList.remove("btn-outline-primary"); 
+                renderList(allExpenses);
+            }
+            else{
+                theme = "light";
+                btnClass = "btn btn-outline-danger btn-sm";
+                localStorage.setItem('content-theme', theme);
+                btnToggle.classList.remove("moon-emoji-reverse");
+                btnToggle.classList.add("moon-emoji");
+                document.querySelector("#main-content").classList.remove("dark");
+                document.querySelector("#jumbotronDiv").classList.remove("bg-dark");
+                document.querySelector("#button-addon2").classList.add("btn-outline-primary");
+                document.querySelector("#button-addon2").classList.remove("btn-primary");
+                renderList(allExpenses);
+            }
+        }
+
+        function setTheme(){
+            theme = localStorage.getItem('content-theme');
+            if(theme === "bg-dark"){
+                theme = "light";
+            }else{
+                theme = "bg-dark";
+            }
+            changeTheme();
+        }
+
+        // Views
+        function renderTotal(sumTotal){
+            const someText = `Total: ${sumTotal}`;
+            total.textContent = someText;
+        }
+
+        function renderList(arrOfList){
+            const allExpensesHTML = arrOfList.map(expense => createListItem(expense));
+            const joindAllExpenseHTML = allExpensesHTML.join("");
+            expenseTable.innerHTML = joindAllExpenseHTML;
+        }
+
+        function createListItem({desc, amount, moment}){
+            return `
+            <li class="list-group-item d-flex justify-content-between ${theme}">
+                            <div class="d-flex flex-column">
+                                ${desc}
+                                <small class="text-muted">${getDateString(moment)}</small>
+                            </div>
+                            <div>
+                                <span class="px-5">
+                                    ${amount}
+                                </span>
+                                <button 
+                                    type="button" 
+                                    class="${btnClass}"
+                                    onclick="deleteItem(${moment.valueOf()})"
+                                    id="button-addon3"
+                                    >
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </li>
+            `
+        }
+    </script>
+</html>
