@@ -99,16 +99,20 @@
         </div>
     </body>
     <script>
+        //getting reference to elemets
         const inputAmt = document.querySelector("#inputAmt");
         const inputDesc = document.querySelector("#inputDesc");
         const btnAdd = document.querySelector("#button-addon2");
         const expenseTable = document.querySelector("#expenseTable");
         const total = document.querySelector("#headingTotal");
         const btnToggle = document.querySelector('#toggle');
+
+        //initialize variables
         let theme = "light";
         let btnClass = "btn btn-outline-danger btn-sm"
         let savedTheme = "";
         let totalExpense = 0;
+
         renderTotal(totalExpense);
 
         let allExpenses = [];
@@ -116,6 +120,8 @@
         let savedArr = [];
 
         // Logic
+
+        // onButtonClick add inputAmount to totalExpense
         function addExpenses(){
             const expenseItem = {};
 
@@ -124,27 +130,35 @@
             const expense = parseInt(textAmount, 10);
             totalExpense = totalExpense + expense;
 
+            //display total in nav bar
             renderTotal(totalExpense);
+
+            //put the data into an object
             expenseItem.desc = textDesc;
             expenseItem.amount = expense;
             expenseItem.moment = new Date();
 
+            //store the object in a array
             allExpenses.push(expenseItem);
+
+            //store the array in local storage
             storeData(expenseItem, totalExpense);
 
+            //display added items in expenseTable
             renderList(allExpenses);
         }
 
         // Controller functions
 
-        // storing the data
+        // storing the data in local  storage
         function storeData(expenseItem){
             savedArr.push(expenseItem);
             localStorage.setItem('saved', JSON.stringify(savedArr));
             localStorage.setItem('total', totalExpense);
         }
 
-        // on load function
+        // on load function called to restore the state of app on page
+        // refresh/reload or closed and reopened
         window.onload = function(){
             if(localStorage.getItem('saved') === null){
                 console.log('original state');
@@ -165,6 +179,7 @@
             renderTotal(totExp);
         }      
         
+        //listening to click events on Add button
         btnAdd.addEventListener("click", addExpenses, false);
 
         // get date string
@@ -194,7 +209,7 @@
         }
 
 
-        // new total
+        // new total called to display new value of total on deletion of list items
         function newTotal(expenses){
             let sum = 0;
             for(let i=0; i<expenses.length; i++){
@@ -206,10 +221,12 @@
 
         }
 
+        //listening to click events on the moon-emoji
         btnToggle.addEventListener('click', function(){
             changeTheme();
         });
 
+        //toggles the theme of the site
         function changeTheme(){
             if(theme === "light"){
                 theme = "bg-dark";
@@ -237,6 +254,7 @@
             }
         }
 
+        //function to open the site in the same theme set by user
         function setTheme(){
             theme = localStorage.getItem('content-theme');
             if(theme === "bg-dark"){
@@ -248,17 +266,21 @@
         }
 
         // Views
+
+        //function to render total expense in the nav bar
         function renderTotal(sumTotal){
             const someText = `Total: ${sumTotal}`;
             total.textContent = someText;
         }
 
+        //function to reder list items when added
         function renderList(arrOfList){
             const allExpensesHTML = arrOfList.map(expense => createListItem(expense));
             const joindAllExpenseHTML = allExpensesHTML.join("");
             expenseTable.innerHTML = joindAllExpenseHTML;
         }
 
+        //function containing html template for creating individual list items
         function createListItem({desc, amount, moment}){
             return `
             <li class="list-group-item d-flex justify-content-between ${theme}">
